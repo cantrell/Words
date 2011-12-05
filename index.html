@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+        <title>Words</title>
+
+        <link href="wikipedia.css" rel="stylesheet" type="text/css" />
+
+        <style>
+
+            html {
+                height: 100%;
+            }
+
+            body {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+                font-size: 15px;
+                color: #666;
+                background: -webkit-radial-gradient(center, rgb(255, 255, 255) 400px,rgb(153, 153, 153) 1200px);
+                background-attachment: fixed;
+            }
+
+            a {text-decoration: none; color: #03f}
+            a:active {color: #6cf}
+
+            #instructions {
+                position: absolute;
+                left: 4px;
+                top: 0px;
+            }
+
+            #mainContainer {
+                width: 80%;
+                margin-top: 100px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            #inputContainer {
+                text-align: center;
+                margin-bottom: 15px;
+            }
+
+            #wordInput {
+                border: 1px solid #ccc;
+                border-radius: 10px;
+                text-align: center;
+                color: #666;
+                /*visibility: hidden;*/
+            }
+
+            #wordInput:focus { outline: none }
+
+            #ruler {
+                visibility: hidden;
+                position: absolute;
+            }
+
+            .inputText {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                font-weight: 300;
+                font-size: 15px;
+            }
+
+            #operationContainer {
+                text-align: center;
+                opacity: 0;
+                margin-bottom: 15px;
+            }
+
+            .operationLink:focus {
+                outline: 1px solid #ccc;
+            }
+
+            #dataContainer {
+                border-top: 1px solid #333;
+                padding-top: 5px;
+                opacity: 0;
+            }
+
+            #info {
+                opacity: 0;
+            }
+
+            .fadable {-webkit-transition: opacity .5s ease-in}
+        </style>
+
+        <script type="text/javascript">
+
+            var minWordInputWidth;
+            var intervals = {
+                scroll: -1
+            };
+
+            function init() {
+                window.addEventListener('keydown', onKeyDown);
+                id('wordInput').addEventListener('keyup', onWordInputChange);
+                minWordInputWidth = id('ruler').clientWidth + 4;
+                id('wordInput').style.width = minWordInputWidth + 'px';
+                id('wordInput').placeholder = id('ruler').innerHTML;
+                id('wordInput').style.visibility = 'visible';
+            }
+
+            function onKeyDown(event) {
+                if (event.keyCode == 27) {
+                    console.log("WHY AM I BEING CALLED SO MUCH?"); // TBD
+                    id('wordInput').value = '';
+                    onWordInputChange();
+                    id('dataContainer').style.opacity = 0;
+                }
+            }
+
+            function onWordInputChange(e) {
+                var inputVal = id('wordInput').value;
+                id('ruler').innerHTML = inputVal;
+                wordInputWidth = id('ruler').clientWidth + 12;
+                if (wordInputWidth > minWordInputWidth) {
+                    id('wordInput').style.width = wordInputWidth + 'px';
+                } else {
+                    id('wordInput').style.width = minWordInputWidth + 'px';
+                }
+                id('operationContainer').style.opacity = (inputVal.length == 0) ? 0 : 1;
+            }
+
+            function startLookup(searchFunction) {
+                if (id('wordInput').value == '') return;
+                changeCursor('wait');
+                id('dataContainer').style.opacity = 0;
+                scrollUp();
+                var args = [];
+                for (var i = 1; i < arguments.length; ++i) args.push(arguments[i]);
+                searchFunction.apply(this, args);
+            }
+
+            function finishLookup() {
+                changeCursor('default');
+                setTimeout(function(){id('dataContainer').style.opacity = 1}, 1);
+            }
+
+            function scrollUp() { intervals.scroll = setInterval(_scroll, 10); }
+
+            function _scroll() {
+                window.scrollBy(0, -(window.scrollY / 5));
+                if (window.scrollY <= 5) {
+                    clearInterval(intervals.scroll);
+                    window.scrollTo(0, 0);
+                }
+            }
+
+            // Wikipedia
+
+            function doResearch(topic) {
+                var title;
+                if (exists(topic)) {
+                    title = topic;
+                    id('wordInput').value = topic.replace(/_/g, ' ');
+                    onWordInputChange();
+                } else {
+                    title = id('wordInput').value;
+                }
+                title = title.replace(/ /g, '_');
+                wikipediaRequest('http://en.wikipedia.org/w/index.php?action=render&title=' + encodeURIComponent(title));
+            }
+
+            function wikipediaRequest(url) {
+                var fullUrl = 'http://www.christiancantrell.com/words/wikipedia.php?url=' + encodeURIComponent(url);
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function ()
+                {
+                    if (this.readyState == 4 && this.status == 200) {
+                        id('dataContainer').innerHTML = this.responseText;
+                        var anchors = id('dataContainer').getElementsByTagName('a');
+                        for (var i = 0; i < anchors.length; ++i) {
+                            var href = anchors[i].getAttribute('href');
+                            if (href.match(/^\/\/en\.wikipedia\.org\/wiki\//)) {
+                                anchors[i].setAttribute('href', 'javascript:startLookup(doResearch, "' + href.substring(href.lastIndexOf('/') + 1, href.length) + '");');
+                            }
+                        }
+                        finishLookup();
+                    }
+                };
+                xhr.open('GET', fullUrl);
+                xhr.send();
+            }
+
+            // Google
+
+            var GOOGLE_RESULT_COUNT = 15;
+            var googleResultIndex = 0;
+
+            function doSearch(searchTerm) {
+                var term = (searchTerm != null) ? searchTerm: id('wordInput').value;
+                googleRequest('https://www.googleapis.com/customsearch/v1?alt=json&fields=items(htmlTitle,link,displayLink,htmlSnippet)&num='+GOOGLE_RESULT_COUNT+'&start='+googleResultIndex+'&cref='+encodeURIComponent('http://www.google.com')+'&q=' + encodeURIComponent(term));
+            }
+
+            function googleRequest(url) {
+                var fullUrl = 'http://www.christiancantrell.com/words/google.php?url=' + encodeURIComponent(url);
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function ()
+                {
+                    if (this.readyState == 4 && this.status == 200) {
+                        var response = JSON.parse(this.responseText);
+                        console.log(response);
+                        finishLookup();
+                    }
+                };
+                xhr.open('GET', fullUrl);
+                xhr.send();
+            }
+
+            // Dictionary
+
+            function doDictionary(site, word) {
+                var q = (word != null) ? word: id('wordInput').value;
+                dictionaryRequest('http://api-pub.dictionary.com/v001?type=define&site='+site+'&q='+q);
+            }
+
+            function dictionaryRequest(url) {
+                var fullUrl = 'http://www.christiancantrell.com/words/dictionary.php?url=' + encodeURIComponent(url);
+                console.log(fullUrl);
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function ()
+                {
+                    console.log(this);
+                    if (this.readyState == 4 && this.status == 200) {
+                        var response = this.responseXML;
+                        console.log(response.getElementsByTagName('entry'));
+                        finishLookup();
+                    }
+                };
+                xhr.open('GET', fullUrl);
+                xhr.send();
+            }
+
+            window.onload = init;
+
+        </script>
+    </head>
+
+    <body>
+        <div id="instructions">esc = clear</div>
+        <div id="mainContainer">
+            <div id="inputContainer">
+                <input id="wordInput" type="text" class="inputText" tabindex="1" /> <!-- autofocus -->
+            </div>
+            <div id="operationContainer" class="fadable">
+                <a href="javascript:startLookup(doDictionary, 'dictionary');" class="operationLink" tabindex="2">meaning</a> &#8756;
+                <a href="#" class="operationLink" tabindex="3">synonyms</a> &#8756;
+                <a href="#" class="operationLink" tabindex="4">examples</a> &#8756;
+                <a href="javascript:startLookup(doResearch);" class="operationLink" tabindex="5">research</a>
+                <!-- <a href="javascript:startLookup(doSearch);" tabindex="6">search</a> -->
+            </div>
+            <div id="dataContainer" class="fadable"></div>
+        </div>
+        <div id="ruler" class="inputText">word</div> <!-- Placeholder text goes here -->
+
+        <!-- Utility functions -->
+        <script type="text/javascript">
+            function id(name) { return document.getElementById(name); }
+            function log() {
+                var s = '';
+                for (var i = 0; i < arguments.length; ++i) {
+                    s += arguments[i];
+                    if (i != (arguments.length - 1)) s += ', ';
+                }
+                console.log(s);
+            }
+            function changeCursor(mode){ document.body.style.cursor = mode };
+            function exists(val) { return (val == null || val == undefined) ? false : true }
+        </script>
+    </body>
+</html>

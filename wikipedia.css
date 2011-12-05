@@ -1,0 +1,48 @@
+.dablink {
+    font-style: italic;
+    padding: 4px;
+}
+
+.infobox {
+    float: right;
+    background-color: #f9f9f9;
+    border: 1px solid #333;
+    margin: 25px;
+    border-radius: 8px;
+    -webkit-box-shadow: 2px 2px 25px #000;
+}
+
+.mbox-small {
+    padding: 4px;
+}
+
+.thumb {
+    border: 1px solid #333;
+    border-radius: 8px;
+    -webkit-box-shadow: 2px 2px 25px #000;
+    margin: 25px;
+    padding:  4px
+}
+
+img {
+    border-radius: 8px;
+}
+
+.tright {float:right; clear:right}
+
+.tleft {float:left; clear: left}
+
+.navbox-title {
+    background-color: #ccccff;
+    /*border: 1px solid #333;*/
+    padding: 4px;
+}
+
+.navbox-group {
+    background-color: #ccccff;
+    /*border: 1px solid #333;*/
+}
+
+/*.plainlinks {*/
+    /*visibility: hidden;*/
+}
