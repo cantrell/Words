@@ -1,0 +1,16 @@
+.dictionaryHeadword {
+    font-weight: bold;
+    font-size: +1;
+}
+
+.dictionaryPron {
+    color: #999;
+}
+
+.dictionaryDerivativesLabel {
+    font-style: italic;
+}
+
+.dictionaryPos {
+    font-style: italic;
+}

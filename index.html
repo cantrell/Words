@@ -8,6 +8,7 @@
         <title>Words</title>
 
         <link href="wikipedia.css" rel="stylesheet" type="text/css" />
+        <link href="dictionary.css" rel="stylesheet" type="text/css" />
 
         <style>
 
@@ -77,9 +78,8 @@
             }
 
             #dataContainer {
-                border-top: 1px solid #333;
-                padding-top: 5px;
-                opacity: 0;
+                padding-top: 15px;
+                opacity: 1;
             }
 
             #info {
@@ -126,14 +126,16 @@
                 id('operationContainer').style.opacity = (inputVal.length == 0) ? 0 : 1;
             }
 
-            function startLookup(searchFunction) {
+            function startLookup(searchFunction, arg1, arg2, arg3) {
                 if (id('wordInput').value == '') return;
                 changeCursor('wait');
-                id('dataContainer').style.opacity = 0;
+                var callback = function() {
+                    id('dataContainer').removeEventListener('webkitTransitionEnd', callback);
+                    searchFunction.apply(window, [arg1, arg2, arg3]);
+                };
+                id('dataContainer').addEventListener('webkitTransitionEnd', callback);
                 scrollUp();
-                var args = [];
-                for (var i = 1; i < arguments.length; ++i) args.push(arguments[i]);
-                searchFunction.apply(this, args);
+                setTimeout(function(){id('dataContainer').style.opacity = 0}, 1)
             }
 
             function finishLookup() {
@@ -178,33 +180,10 @@
                             var href = anchors[i].getAttribute('href');
                             if (href.match(/^\/\/en\.wikipedia\.org\/wiki\//)) {
                                 anchors[i].setAttribute('href', 'javascript:startLookup(doResearch, "' + href.substring(href.lastIndexOf('/') + 1, href.length) + '");');
+                            } else {
+                                anchors[i].setAttribute('target', '_new');
                             }
                         }
-                        finishLookup();
-                    }
-                };
-                xhr.open('GET', fullUrl);
-                xhr.send();
-            }
-
-            // Google
-
-            var GOOGLE_RESULT_COUNT = 15;
-            var googleResultIndex = 0;
-
-            function doSearch(searchTerm) {
-                var term = (searchTerm != null) ? searchTerm: id('wordInput').value;
-                googleRequest('https://www.googleapis.com/customsearch/v1?alt=json&fields=items(htmlTitle,link,displayLink,htmlSnippet)&num='+GOOGLE_RESULT_COUNT+'&start='+googleResultIndex+'&cref='+encodeURIComponent('http://www.google.com')+'&q=' + encodeURIComponent(term));
-            }
-
-            function googleRequest(url) {
-                var fullUrl = 'http://www.christiancantrell.com/words/google.php?url=' + encodeURIComponent(url);
-                var xhr = new XMLHttpRequest();
-                xhr.onreadystatechange = function ()
-                {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var response = JSON.parse(this.responseText);
-                        console.log(response);
                         finishLookup();
                     }
                 };
@@ -216,19 +195,160 @@
 
             function doDictionary(site, word) {
                 var q = (word != null) ? word: id('wordInput').value;
-                dictionaryRequest('http://api-pub.dictionary.com/v001?type=define&site='+site+'&q='+q);
+                if (site == 'dictionary') {
+                    dictionaryRequest('http://api-pub.dictionary.com/v001?type=define&site='+site+'&q='+q);
+                } else if (site == 'thesaurus') {
+                    thesaurusRequest('http://api-pub.dictionary.com/v001?type=define&site='+site+'&q='+q);
+                }
+            }
+
+            function thesaurusRequest(url) {
+                var fullUrl = 'http://www.christiancantrell.com/words/dictionary.php?url=' + encodeURIComponent(url);
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function ()
+                {
+                    if (this.readyState == 4 && this.status == 200) {
+
+                        removeAllChildren(id('dataContainer'));
+                        var outputDiv = document.createElement('div');
+                        var response = this.responseXML;
+                        var entries = response.getElementsByTagName('entry');
+
+                        if (entries.length == 0) {
+                            outputDiv.innerHTML = 'No synonyms found.';
+                        }
+
+                        for (var i = 0; i < entries.length; ++i) {
+                            var entry = entries[i];
+                            var entryDiv = document.createElement('div');
+                            outputDiv.appendChild(entryDiv);
+
+                            var headwordSpan = document.createElement('span');
+                            headwordSpan.setAttribute('class', 'dictionaryHeadword');
+                            entryDiv.appendChild(headwordSpan);
+                            headwordSpan.innerHTML = entry.getElementsByTagName('headword')[0].childNodes[0].nodeValue;
+
+                            var posSpan = document.createElement('span');
+                            posSpan.setAttribute('class', 'dictionaryPos');
+                            entryDiv.appendChild(posSpan);
+                            posSpan.innerHTML = '&nbsp;' + entry.getElementsByTagName('partofspeech')[0].childNodes[0].nodeValue;
+
+                            var defSpan = document.createElement('span');
+                            entryDiv.appendChild(defSpan);
+                            defSpan.innerHTML = '&nbsp;' + entry.getElementsByTagName('definition')[0].childNodes[0].nodeValue;
+
+                            var synonymsDiv = document.createElement('div');
+                            entryDiv.appendChild(synonymsDiv);
+                            var synonymsBq = document.createElement('blockquote');
+                            synonymsDiv.appendChild(synonymsBq);
+                            var synonymsText = entry.getElementsByTagName('synonyms')[0].childNodes[0].nodeValue;
+                            synonymsText = synonymsText.replace(/<a.*?>(.+?)<\/a>/img, '$1');
+                            synonymsBq.innerHTML = synonymsText;
+                        }
+
+                        id('dataContainer').appendChild(outputDiv);
+                        finishLookup();
+                    }
+                };
+                xhr.open('GET', fullUrl);
+                xhr.send();
             }
 
             function dictionaryRequest(url) {
                 var fullUrl = 'http://www.christiancantrell.com/words/dictionary.php?url=' + encodeURIComponent(url);
-                console.log(fullUrl);
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function ()
                 {
-                    console.log(this);
                     if (this.readyState == 4 && this.status == 200) {
+                        
+                        removeAllChildren(id('dataContainer'));
+                        var outputDiv = document.createElement('div');
                         var response = this.responseXML;
-                        console.log(response.getElementsByTagName('entry'));
+                        var entries = response.getElementsByTagName('entry');
+
+                        if (entries.length == 0) {
+                            outputDiv.innerHTML = 'No definitions found.';
+                        }
+
+                        for (var i = 0; i < entries.length; ++i) {
+                            var entry = entries[i];
+                            var displayFormDiv = document.createElement('div');
+                            var displayFormSpan = document.createElement('span');
+                            displayFormDiv.appendChild(displayFormSpan);
+                            displayFormSpan.setAttribute('class', 'dictionaryHeadword');
+                            displayFormSpan.innerHTML = entry.getElementsByTagName('display_form')[0].childNodes[0].nodeValue;
+                            var pron = entry.getElementsByTagName('pron')[0];
+                            if (pron != undefined) {
+                                var pronSpan = document.createElement('span');
+                                pronSpan.setAttribute('class', 'dictionaryPron');
+                                pronSpan.innerHTML = '&nbsp;' + pron.childNodes[0].nodeValue;
+                                displayFormDiv.appendChild(pronSpan);
+                            }
+
+                            // parts of speech
+                            var partsOfSpeech = entry.getElementsByTagName('partofspeech');
+
+                            var posOl = document.createElement('ol');
+                            if (partsOfSpeech.length > 0) {
+                                displayFormDiv.appendChild(posOl);
+                            }
+
+                            for (var j = 0; j < partsOfSpeech.length; ++j) {
+                                var pos = partsOfSpeech[0];
+                                var posLi = document.createElement('li');
+                                posLi.innerHTML = pos.getAttribute('pos');
+                                posOl.appendChild(posLi);
+
+                                var defSet = pos.getElementsByTagName('defset')[0];
+
+                                if (defSet != undefined) {
+                                    var defUl = document.createElement('ul');
+                                    posLi.appendChild(defUl);
+                                    var defs = defSet.getElementsByTagName('def');
+                                    for (var k = 0; k < defs.length; ++k) {
+                                        var def = defs[k];
+                                        var defLi = document.createElement('li');
+                                        defUl.appendChild(defLi);
+                                        defLi.innerHTML = def.childNodes[0].nodeValue;
+                                    }
+                                }
+                            }
+
+                            // derivatives
+                            var derivatives = entry.getElementsByTagName('derivatives');
+                            var derOl = document.createElement('ol');
+                            if (derivatives.length > 0) {
+                                var derP = document.createElement('p');
+                                displayFormDiv.appendChild(derP);
+                                derP.setAttribute('class', 'dictionaryDerivativesLabel');
+                                derP.innerHTML = 'derivatives';
+                                displayFormDiv.appendChild(derOl);
+                            }
+
+                            for (var j = 0; j < derivatives.length; ++j) {
+                                var derivative = derivatives[0];
+                                var derLi = document.createElement('li');
+                                derLi.innerHTML = derivative.getAttribute('pos');
+                                derOl.appendChild(derLi);
+
+                                var frms = derivative.getElementsByTagName('frm');
+
+                                if (frms.length > 0) {
+                                    var frmUl = document.createElement('ul');
+                                    derLi.appendChild(frmUl);
+                                    for (var k = 0; k < frms.length; ++k) {
+                                        var frm = frms[k];
+                                        var headword = frm.getElementsByTagName('headword')[0].childNodes[0].nodeValue;
+                                        var phon = frm.getElementsByTagName('phon')[0].childNodes[0].nodeValue;
+                                        var frmLi = document.createElement('li');
+                                        frmUl.appendChild(frmLi);
+                                        frmLi.innerHTML = headword + '  (' + phon + ')';
+                                    }
+                                }
+                            }
+                            outputDiv.appendChild(displayFormDiv);
+                        }
+                        id('dataContainer').appendChild(outputDiv);
                         finishLookup();
                     }
                 };
@@ -249,8 +369,8 @@
             </div>
             <div id="operationContainer" class="fadable">
                 <a href="javascript:startLookup(doDictionary, 'dictionary');" class="operationLink" tabindex="2">meaning</a> &#8756;
-                <a href="#" class="operationLink" tabindex="3">synonyms</a> &#8756;
-                <a href="#" class="operationLink" tabindex="4">examples</a> &#8756;
+                <a href="javascript:startLookup(doDictionary, 'thesaurus');" class="operationLink" tabindex="3">synonyms</a> &#8756;
+                <!--<a href="#" class="operationLink" tabindex="4">examples</a> &#8756;-->
                 <a href="javascript:startLookup(doResearch);" class="operationLink" tabindex="5">research</a>
                 <!-- <a href="javascript:startLookup(doSearch);" tabindex="6">search</a> -->
             </div>
@@ -271,6 +391,7 @@
             }
             function changeCursor(mode){ document.body.style.cursor = mode };
             function exists(val) { return (val == null || val == undefined) ? false : true }
+            function removeAllChildren(element) { while (element.hasChildNodes()) { element.removeChild(element.firstChild);} };
         </script>
     </body>
 </html>
