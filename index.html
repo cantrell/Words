@@ -14,6 +14,8 @@
 
             html {
                 height: 100%;
+                overflow-y: scroll;
+                overflow-x: hidden;
             }
 
             body {
@@ -28,10 +30,36 @@
             a {text-decoration: none; color: #03f}
             a:active {color: #6cf}
 
-            #instructions {
+            #helpLabel {
                 position: absolute;
                 left: 4px;
                 top: 0px;
+            }
+
+            #helpBox {
+                position: absolute;
+                left: -285px;
+                top: 25px;
+            }
+
+            #historyLabel {
+                position: absolute;
+                right: 4px;
+                top: 0px;
+            }
+
+            #historyBox {
+                position: absolute;
+                right: -125px;
+                top: 25px;
+            }
+
+            .hiddenBox {
+                background-color: #fff;
+                border-radius: 8px;
+                -webkit-box-shadow: 2px 2px 25px #000;
+                overflow: hidden;
+                padding:  5px;
             }
 
             #mainContainer {
@@ -43,7 +71,7 @@
 
             #inputContainer {
                 text-align: center;
-                margin-bottom: 15px;
+                margin-bottom: 5px;
             }
 
             #wordInput {
@@ -67,6 +95,11 @@
                 font-size: 15px;
             }
 
+            #spinner {
+                margin: 0 auto;
+                opacity: 0;
+            }
+            
             #operationContainer {
                 text-align: center;
                 opacity: 0;
@@ -87,6 +120,12 @@
             }
 
             .fadable {-webkit-transition: opacity .5s ease-in}
+            
+            .tweenable {
+                -webkit-transition-property: left, right;
+                -webkit-transition-duration: .25s;
+                -webkit-transition-timing-function: ease-in;
+            }
         </style>
 
         <script type="text/javascript">
@@ -99,10 +138,24 @@
             function init() {
                 window.addEventListener('keydown', onKeyDown);
                 id('wordInput').addEventListener('keyup', onWordInputChange);
+                id('dataContainer').addEventListener('dblclick', onDoubleClick);
                 minWordInputWidth = id('ruler').clientWidth + 4;
                 id('wordInput').style.width = minWordInputWidth + 'px';
                 id('wordInput').placeholder = id('ruler').innerHTML;
                 id('wordInput').style.visibility = 'visible';
+
+                // Set up the spinner
+                var spinner = getSpinner('20px', 12, '#000');
+                spinner.setAttribute('id', 'spinner');
+                spinner.setAttribute('class', 'fadable');
+                id('spinnerContainer').appendChild(spinner);
+            }
+
+            function onDoubleClick(event) {
+                var selectedText = getSelectedText();
+                if (!exists(selectedText)) return;
+                id('wordInput').value = selectedText;
+                onWordInputChange();
             }
 
             function onKeyDown(event) {
@@ -111,6 +164,8 @@
                     id('wordInput').value = '';
                     onWordInputChange();
                     id('dataContainer').style.opacity = 0;
+                    hideHelp();
+                    hideHistory();
                 }
             }
 
@@ -128,7 +183,7 @@
 
             function startLookup(searchFunction, arg1, arg2, arg3) {
                 if (id('wordInput').value == '') return;
-                changeCursor('wait');
+                id('spinner').style.opacity = 1;
                 var callback = function() {
                     id('dataContainer').removeEventListener('webkitTransitionEnd', callback);
                     searchFunction.apply(window, [arg1, arg2, arg3]);
@@ -139,7 +194,7 @@
             }
 
             function finishLookup() {
-                changeCursor('default');
+                id('spinner').style.opacity = 0;
                 setTimeout(function(){id('dataContainer').style.opacity = 1}, 1);
             }
 
@@ -260,7 +315,6 @@
                 xhr.onreadystatechange = function ()
                 {
                     if (this.readyState == 4 && this.status == 200) {
-                        
                         removeAllChildren(id('dataContainer'));
                         var outputDiv = document.createElement('div');
                         var response = this.responseXML;
@@ -277,6 +331,17 @@
                             displayFormDiv.appendChild(displayFormSpan);
                             displayFormSpan.setAttribute('class', 'dictionaryHeadword');
                             displayFormSpan.innerHTML = entry.getElementsByTagName('display_form')[0].childNodes[0].nodeValue;
+
+                            // Are we an idiom?
+                            var idiomTest = (entry.getElementsByTagName('partofspeech')[0].getAttribute('pos') == 'idiom') ? true : false;
+                            if (idiomTest) {
+                                var idiomSpan = document.createElement('span');
+                                displayFormSpan.appendChild(idiomSpan);
+                                idiomSpan.setAttribute('class', 'dictionaryPos');
+                                var labelTest = entry.getElementsByTagName('partofspeech')[0].getAttribute('label');
+                                idiomSpan.innerHTML = (exists(labelTest) && labelTest == "Informal") ? '&nbsp;(idiom,&nbsp;informal)' : '&nbsp;(idiom)' ;
+                            }
+
                             var pron = entry.getElementsByTagName('pron')[0];
                             if (pron != undefined) {
                                 var pronSpan = document.createElement('span');
@@ -289,12 +354,12 @@
                             var partsOfSpeech = entry.getElementsByTagName('partofspeech');
 
                             var posOl = document.createElement('ol');
-                            if (partsOfSpeech.length > 0) {
+                            if (partsOfSpeech.length > 0 && !idiomTest) {
                                 displayFormDiv.appendChild(posOl);
                             }
 
                             for (var j = 0; j < partsOfSpeech.length; ++j) {
-                                var pos = partsOfSpeech[0];
+                                var pos = partsOfSpeech[j];
                                 var posLi = document.createElement('li');
                                 posLi.innerHTML = pos.getAttribute('pos');
                                 posOl.appendChild(posLi);
@@ -303,7 +368,11 @@
 
                                 if (defSet != undefined) {
                                     var defUl = document.createElement('ul');
-                                    posLi.appendChild(defUl);
+                                    if (idiomTest) {
+                                        displayFormDiv.appendChild(defUl);
+                                    } else {
+                                        posLi.appendChild(defUl);
+                                    }
                                     var defs = defSet.getElementsByTagName('def');
                                     for (var k = 0; k < defs.length; ++k) {
                                         var def = defs[k];
@@ -326,7 +395,7 @@
                             }
 
                             for (var j = 0; j < derivatives.length; ++j) {
-                                var derivative = derivatives[0];
+                                var derivative = derivatives[j];
                                 var derLi = document.createElement('li');
                                 derLi.innerHTML = derivative.getAttribute('pos');
                                 derOl.appendChild(derLi);
@@ -356,17 +425,35 @@
                 xhr.send();
             }
 
+            function showHelp() {id('helpBox').style.left = '5px'};
+            function hideHelp() {id('helpBox').style.left=((parseInt(id('helpBox').style.width)+25)*-1)+'px'}
+            function showHistory() {id('historyBox').style.right = '5px'}
+            function hideHistory() {id('historyBox').style.right='-125px'}
+
             window.onload = init;
 
         </script>
     </head>
 
     <body>
-        <div id="instructions">esc = clear</div>
+        <div id="helpLabel"><a href="javascript:showHelp()">help</a></div>
+        <div id="helpBox" class="hiddenBox tweenable" style="width: 260px; height: 80px;">
+            <ol>
+                <li>double-click words to search</li>
+                <li>press esc to clear your search</li>
+            </ol>
+            <div style="text-align: right"><a href="javascript:hideHelp()">close</a></div>
+        </div>
+        <div id="historyLabel"><a href="javascript:showHistory()">history</a></div>
+        <div id="historyBox" class="hiddenBox tweenable" style="width: 100px; height: 300px;">
+            <ulHistory
+            <div style="text-align: left"><a href="javascript:hideHistory()">close</a></div>
+        </div>
         <div id="mainContainer">
             <div id="inputContainer">
-                <input id="wordInput" type="text" class="inputText" tabindex="1" /> <!-- autofocus -->
+                <input id="wordInput" type="text" class="inputText" tabindex="1" autofocus/> <!-- autofocus -->
             </div>
+            <div id="spinnerContainer"></div>
             <div id="operationContainer" class="fadable">
                 <a href="javascript:startLookup(doDictionary, 'dictionary');" class="operationLink" tabindex="2">meaning</a> &#8756;
                 <a href="javascript:startLookup(doDictionary, 'thesaurus');" class="operationLink" tabindex="3">synonyms</a> &#8756;
@@ -389,9 +476,43 @@
                 }
                 console.log(s);
             }
-            function changeCursor(mode){ document.body.style.cursor = mode };
-            function exists(val) { return (val == null || val == undefined) ? false : true }
+            function exists(val) { return (val == null || val == undefined || val == '') ? false : true }
             function removeAllChildren(element) { while (element.hasChildNodes()) { element.removeChild(element.firstChild);} };
+            function getSelectedText() { return getSelection();}
+
+            function getSpinner(size, numberOfBars, color) {
+                var style = document.createElement('style');
+                style.innerHTML = '@-webkit-keyframes fade {from {opacity: 1;} to {opacity: 0.25;}}';
+                document.getElementsByTagName('head')[0].appendChild(style);
+                var spinner = document.createElement('div');
+                spinner.style.width = size;
+                spinner.style.height = size;
+                spinner.style.position = 'relative';
+                var rotation = 0;
+                var rotateBy = 360 / numberOfBars;
+                var animationDelay = 0;
+                var frameRate = 1 / numberOfBars;
+                for (var i = 0; i < numberOfBars; ++i) {
+                    var bar = document.createElement('div');
+                    spinner.appendChild(bar);
+                    bar.style.width = '12%';
+                    bar.style.height = '26%';
+                    bar.style.background = color;
+                    bar.style.position = 'absolute';
+                    bar.style.left = '44.5%';
+                    bar.style.top = '37%';
+                    bar.style.opacity = '0';
+                    bar.style['-webkit-border-radius'] = '50px';
+                    bar.style['-webkit-box-shadow'] = '0 0 3px rgba(0,0,0,0.2)';
+                    bar.style['-webkit-animation'] = 'fade 1s linear infinite';
+                    bar.style['-webkit-transform'] = 'rotate('+rotation+'deg) translate(0, -142%)';
+                    bar.style['-webkit-animation-delay'] = animationDelay + 's';
+                    rotation += rotateBy;
+                    animationDelay -= frameRate;
+                }
+                return spinner;
+            }
+
         </script>
     </body>
 </html>
