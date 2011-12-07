@@ -1,0 +1,114 @@
+html {
+    height: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+    color: #666;
+    background: -webkit-radial-gradient(center, rgb(255, 255, 255) 400px,rgb(153, 153, 153) 1200px);
+    background-attachment: fixed;
+}
+
+a {text-decoration: none; color: #03f}
+a:active {color: #6cf}
+
+#helpLabel {
+    position: absolute;
+    left: 4px;
+    top: 0px;
+}
+
+#helpBox {
+    position: absolute;
+    left: -285px;
+    top: 25px;
+}
+
+#historyLabel {
+    position: absolute;
+    right: 4px;
+    top: 0px;
+}
+
+#historyBox {
+    position: absolute;
+    right: -125px;
+    top: 25px;
+}
+
+.hiddenBox {
+    background-color: #fff;
+    border-radius: 8px;
+    -webkit-box-shadow: 2px 2px 25px #000;
+    overflow: hidden;
+    padding:  5px;
+}
+
+#mainContainer {
+    width: 80%;
+    margin-top: 100px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#inputContainer {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+#wordInput {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    text-align: center;
+    color: #666;
+    /*visibility: hidden;*/
+}
+
+#wordInput:focus { outline: none }
+
+#ruler {
+    visibility: hidden;
+    position: absolute;
+}
+
+.inputText {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    font-size: 15px;
+}
+
+#spinner {
+    margin: 0 auto;
+    opacity: 0;
+}
+
+#operationContainer {
+    text-align: center;
+    opacity: 0;
+    margin-bottom: 15px;
+}
+
+.operationLink:focus {
+    outline: 1px solid #ccc;
+}
+
+#dataContainer {
+    padding-top: 15px;
+    opacity: 1;
+}
+
+#info {
+    opacity: 0;
+}
+
+.fadable {-webkit-transition: opacity .5s ease-in}
+
+.tweenable {
+    -webkit-transition-property: left, right;
+    -webkit-transition-duration: .25s;
+    -webkit-transition-timing-function: ease-in;
+}
