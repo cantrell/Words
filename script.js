@@ -1,9 +1,17 @@
 var minWordInputWidth;
+
 var intervals = {
     scroll: -1
 };
 
+var historyData = {
+    wordHistory: null,
+    MAX_LENGTH: 50,
+    KEY: 'wordHistory'
+}
+
 function init() {
+    window.addEventListener('beforeunload', onUnload);
     window.addEventListener('keydown', onKeyDown);
     id('wordInput').addEventListener('keyup', onWordInputChange);
     id('dataContainer').addEventListener('dblclick', onDoubleClick);
@@ -24,6 +32,63 @@ function init() {
     // Check for initial state
     var word = getWordFromUrl();
     if (exists(word)) setWordInput(word);
+
+    showHistoryClearButton();
+
+    loadWordHistory();
+}
+
+function onUnload() {
+    window.localStorage.setItem(historyData.KEY, JSON.stringify(historyData.wordHistory));
+}
+
+function loadWordHistory() {
+    // wordHistory.KEY = [{word:'a', id:0}, {word:'b', id:1}, {word:'c', id:2}]
+    historyData.wordHistory = eval(window.localStorage.getItem(historyData.KEY));
+    if (!exists(historyData.wordHistory)) historyData.wordHistory = [];
+    var ol = document.createElement('ol');
+    id('historyContainer').appendChild(ol);
+    ol.setAttribute('id', 'historyList');
+    for (var i = 0; i < historyData.wordHistory.length; ++i) {
+        addWordToHistoryDrawer(historyData.wordHistory[i].word, historyData.wordHistory[i].id);
+    }
+}
+
+function addWordToHistoryDrawer(word, wordId) {
+    var historyList = id('historyList');
+    var li = document.createElement('li');
+    historyList.insertBefore(li, historyList.firstChild);
+    li.setAttribute('id', wordId);
+    var wordA = document.createElement('a');
+    li.appendChild(wordA);
+    wordA.setAttribute('href', 'javascript:setWordInput("'+word+'")');
+    wordA.innerHTML = word;
+    var deleteA = document.createElement('a');
+    li.appendChild(deleteA);
+    deleteA.setAttribute('href', 'javascript:removeFromHistory("'+wordId+'")');
+    deleteA.innerHTML = '&nbsp;&#10007;';
+}
+
+function removeFromHistory(wordId) {
+    for (var i = 0; i < historyData.wordHistory.length; ++i) {
+        if (historyData.wordHistory[i].id == wordId) {
+            historyData.wordHistory.splice(i, 1);
+            break;
+        }
+    }
+    var lis = id('historyList').childNodes;
+    for (var i = 0; i < lis.length; ++i) {
+        if (lis[i].getAttribute('id') == wordId) {
+            id('historyList').removeChild(lis[i]);
+            break;
+        }
+    }
+}
+
+function clearHistory() {
+    historyData.wordHistory = [];
+    window.localStorage.removeItem(historyData.KEY);
+    removeAllChildren(id('historyList'));
 }
 
 function getWordFromUrl() {
@@ -45,6 +110,13 @@ function onPopState(event) {
 
 function pushState(word) {
     window.history.pushState(word, 'Words: ' + word, '#'+word);
+    var id = new Date().getTime();
+    historyData.wordHistory.push({word:word, id: id});
+    addWordToHistoryDrawer(word, id);
+    if (historyData.wordHistory.length > historyData.MAX_LENGTH) {
+        historyData.wordHistory.shift();
+        historyList.removeChild(historyList.lastChild);
+    }
 }
 
 function setWordInput(word) {
@@ -325,9 +397,67 @@ function dictionaryRequest(url) {
     xhr.send();
 }
 
-function showHelp() {id('helpBox').style.left = '5px'};
-function hideHelp() {id('helpBox').style.left=((parseInt(id('helpBox').style.width)+25)*-1)+'px'}
-function showHistory() {id('historyBox').style.right = '5px'}
-function hideHistory() {id('historyBox').style.right='-125px'}
+var isShowing = {
+    help:false,
+    wordHistory:false
+};
+
+function showHelp() {
+    if (isShowing.help) {
+        hideHelp();
+        return;
+    }
+    id('helpBox').style.left = '5px';
+    isShowing.help = true;
+}
+
+function hideHelp() {
+    id('helpBox').style.left=((parseInt(id('helpBox').style.width)+25)*-1)+'px';
+    isShowing.help = false;
+}
+
+function showHistory() {
+    if (isShowing.wordHistory) {
+        hideHistory();
+        return;
+    }
+    id('historyBox').style.right = '5px';
+    isShowing.wordHistory = true;
+}
+
+function hideHistory() {
+    id('historyBox').style.right='-195px';
+    isShowing.wordHistory = false;
+}
+
+function confirmClearHistory() {
+    removeAllChildren(id('clearHistoryContainer'));
+
+    var span = document.createElement('span');
+    id('clearHistoryContainer').appendChild(span);
+    span.innerText = 'sure? (';
+
+    var ya = document.createElement('a');
+    span.appendChild(ya);
+    ya.innerText = 'y';
+    ya.setAttribute('href', 'javascript:clearHistory(); showHistoryClearButton();');
+
+    span.appendChild(document.createTextNode('/'));
+
+    var na = document.createElement('a');
+    span.appendChild(na);
+    na.innerText = 'n';
+    na.setAttribute('href', 'javascript:showHistoryClearButton();');
+
+    span.appendChild(document.createTextNode(')'));
+}
+
+function showHistoryClearButton() {
+    removeAllChildren(id('clearHistoryContainer'));
+    var a = document.createElement('a');
+    id('clearHistoryContainer').appendChild(a);
+    a.setAttribute('href', 'javascript: confirmClearHistory();');
+    a.innerText = 'clear';
+}
 
 window.onload = init;
