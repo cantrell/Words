@@ -30,12 +30,13 @@
             <div id="historyContainer"></div>
             <div style="text-align: left">
                 <a href="javascript:hideHistory()" tabindex="-1">close</a> &#8756;
-                <span id="clearHistoryContainer"></span>
+                <span id="historyClearContainer"><a href="javascript:confirmClearHistory();" tabindex="-1">clear</a></span>
+                <span id="historyConfirmClearContainer" style="display: none">sure? (<a href="javascript:clearHistory();cancelClearHistory();" tabindex="-1">y</a>/<a href="javascript:cancelClearHistory();" tabindex="-1">n</a>)</span>
             </div>
         </div>
         <div id="mainContainer">
             <div id="inputContainer">
-                <input id="wordInput" type="text" class="inputText" tabindex="1" autofocus/>
+                <input id="wordInput" type="text" class="inputText" tabindex="1"/> <!-- autofocus -->
             </div>
             <div id="spinnerContainer"></div>
             <div id="operationContainer" class="fadable">

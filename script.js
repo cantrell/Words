@@ -33,8 +33,6 @@ function init() {
     var word = getWordFromUrl();
     if (exists(word)) setWordInput(word);
 
-    showHistoryClearButton();
-
     loadWordHistory();
 }
 
@@ -62,11 +60,13 @@ function addWordToHistoryDrawer(word, wordId) {
     var wordA = document.createElement('a');
     li.appendChild(wordA);
     wordA.setAttribute('href', 'javascript:setWordInput("'+word+'")');
+    wordA.setAttribute('tabindex', '-1')
     wordA.innerHTML = word;
     var deleteA = document.createElement('a');
     li.appendChild(deleteA);
     deleteA.setAttribute('href', 'javascript:removeFromHistory("'+wordId+'")');
-    deleteA.innerHTML = '&nbsp;&#10007;';
+    deleteA.setAttribute('tabindex', '-1')
+    deleteA.innerHTML = '&nbsp;&nbsp;&#10007;';
 }
 
 function removeFromHistory(wordId) {
@@ -132,7 +132,7 @@ function onDoubleClick(event) {
 
 function onKeyDown(event) {
     if (event.keyCode == 27) {
-        console.log("WHY AM I BEING CALLED SO MUCH?"); // TBD
+        console.log("WHY AM I BEING CALLED SO MUCH?"); // TODO
         setWordInput('');
         id('dataContainer').style.opacity = 0;
         hideHelp();
@@ -428,36 +428,17 @@ function showHistory() {
 function hideHistory() {
     id('historyBox').style.right='-195px';
     isShowing.wordHistory = false;
+    cancelClearHistory();
 }
 
 function confirmClearHistory() {
-    removeAllChildren(id('clearHistoryContainer'));
-
-    var span = document.createElement('span');
-    id('clearHistoryContainer').appendChild(span);
-    span.innerText = 'sure? (';
-
-    var ya = document.createElement('a');
-    span.appendChild(ya);
-    ya.innerText = 'y';
-    ya.setAttribute('href', 'javascript:clearHistory(); showHistoryClearButton();');
-
-    span.appendChild(document.createTextNode('/'));
-
-    var na = document.createElement('a');
-    span.appendChild(na);
-    na.innerText = 'n';
-    na.setAttribute('href', 'javascript:showHistoryClearButton();');
-
-    span.appendChild(document.createTextNode(')'));
+    id('historyClearContainer').style.display = 'none';
+    id('historyConfirmClearContainer').style.display = 'inline';
 }
 
-function showHistoryClearButton() {
-    removeAllChildren(id('clearHistoryContainer'));
-    var a = document.createElement('a');
-    id('clearHistoryContainer').appendChild(a);
-    a.setAttribute('href', 'javascript: confirmClearHistory();');
-    a.innerText = 'clear';
+function cancelClearHistory() {
+    id('historyClearContainer').style.display = 'inline';
+    id('historyConfirmClearContainer').style.display = 'none';
 }
 
 window.onload = init;
