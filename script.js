@@ -195,7 +195,7 @@ function doResearch(topic) {
 }
 
 function wikipediaRequest(url) {
-    var fullUrl = 'http://www.christiancantrell.com/words/wikipedia.php?url=' + encodeURIComponent(url);
+    var fullUrl = 'http://www.christiancantrell.com/words/services/wikipedia.php?url=' + encodeURIComponent(url);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function ()
     {
@@ -230,7 +230,7 @@ function doDictionary(site, word) {
 }
 
 function thesaurusRequest(url) {
-    var fullUrl = 'http://www.christiancantrell.com/words/dictionary.php?url=' + encodeURIComponent(url);
+    var fullUrl = 'http://www.christiancantrell.com/words/services/dictionary.php?url=' + encodeURIComponent(url);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function ()
     {
@@ -282,7 +282,7 @@ function thesaurusRequest(url) {
 }
 
 function dictionaryRequest(url) {
-    var fullUrl = 'http://www.christiancantrell.com/words/dictionary.php?url=' + encodeURIComponent(url);
+    var fullUrl = 'http://www.christiancantrell.com/words/services/dictionary.php?url=' + encodeURIComponent(url);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function ()
     {
