@@ -10,6 +10,7 @@ body {
     font-size: 15px;
     color: #666;
     background: -webkit-radial-gradient(center, rgb(255, 255, 255) 400px,rgb(153, 153, 153) 1200px);
+    background: -moz-radial-gradient(center, rgb(255, 255, 255) 400px,rgb(153, 153, 153) 1200px);
     background-attachment: fixed;
 }
 
@@ -54,6 +55,7 @@ a:active {color: #6cf}
     background-color: #fff;
     border-radius: 8px;
     -webkit-box-shadow: 2px 2px 25px #000;
+    -moz-box-shadow: 2px 2px 25px #000;
     overflow: hidden;
     padding:  5px;
 }
@@ -115,10 +117,16 @@ a:active {color: #6cf}
     opacity: 0;
 }
 
-.fadable {-webkit-transition: opacity .25s ease-in}
+.fadable {
+    -webkit-transition: opacity .25s ease-in;
+    -moz-transition: opacity .25s ease-in;
+}
 
 .tweenable {
     -webkit-transition-property: left, right;
     -webkit-transition-duration: .25s;
     -webkit-transition-timing-function: ease-in;
+    -moz-transition-property: left, right;
+    -moz-transition-duration: .25s;
+    -moz-transition-timing-function: ease-in;
 }
