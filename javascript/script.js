@@ -162,13 +162,19 @@ function onWordInputChange(event) {
 function startLookup(searchFunction, arg1, arg2, arg3) {
     if (id('wordInput').value == '') return;
     id('spinner').style.opacity = 1;
-    var callback = function() {
-        id('dataContainer').removeEventListener('webkitTransitionEnd', callback);
-        searchFunction.apply(window, [arg1, arg2, arg3]);
-    };
-    id('dataContainer').addEventListener('webkitTransitionEnd', callback);
     scrollUp();
-    setTimeout(function(){id('dataContainer').style.opacity = 0}, 1)
+    if (arg1 == 'spelling') {
+        id('dataContainer').style.opacity = 0;
+        searchFunction.apply(window, [arg1, arg2, arg3]);
+    } else {
+        var transitionEnd = (navigator.userAgent.indexOf('WebKit') != -1) ? 'webkitTransitionEnd' : 'transitionend' ;
+        var callback = function() {
+            id('dataContainer').removeEventListener(transitionEnd, callback);
+            searchFunction.apply(window, [arg1, arg2, arg3]);
+        };
+        id('dataContainer').addEventListener(transitionEnd, callback);
+        setTimeout(function(){id('dataContainer').style.opacity = 0}, 1);
+    }
 }
 
 function finishLookup() {
@@ -280,7 +286,6 @@ function spellingRequest(url) {
     xhr.open('GET', fullUrl);
     xhr.send();
 }
-
 
 function thesaurusRequest(url) {
     var fullUrl = 'http://www.christiancantrell.com/words/services/dictionary.php?url=' + encodeURIComponent(url);
