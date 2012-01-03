@@ -234,6 +234,7 @@ function wikipediaRequest(url) {
 
 function doDictionary(site, word) {
     var q = (word != null) ? word: id('wordInput').value;
+    q = encodeURI(q);
     if (site != 'spelling') pushState(q);
     if (site == 'dictionary') {
         dictionaryRequest('http://api-pub.dictionary.com/v001?type=define&site='+site+'&q='+q);
@@ -253,6 +254,10 @@ function spellingRequest(url) {
             removeAllChildren(id('dataContainer'));
             var outputDiv = document.createElement('div');
             var response = this.responseXML;
+            if (response == null) {
+                finishLookup();
+                return;
+            }
             var ul = document.createElement('ol');
             outputDiv.appendChild(ul);
             var bestMatch = response.getElementsByTagName('bestmatch');
