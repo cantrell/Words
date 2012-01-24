@@ -20,4 +20,4 @@ function exists(val) { return (val == null || val == undefined || val == '') ? f
 
 function removeAllChildren(element) { while (element.hasChildNodes()) { element.removeChild(element.firstChild);} };
 
-function getSelectedText() { return getSelection();}
+function getSelectedText() { return getSelection(); }
